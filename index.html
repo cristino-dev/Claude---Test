@@ -1,140 +1,390 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Jogo da Cobrinha</title>
 <style>
+  :root {
+    --bg: #d9d6c4;
+    --ink: #2b2a1f;
+    --ink-soft: #6b6852;
+    --case: #c7c4a8;
+    --case-highlight: #f1efdc;
+    --case-shadow: #96927a;
+    --case-edge: #7d7a63;
+
+    --bezel: #1c1a12;
+    --screen: #16281a;
+    --screen-line: rgba(163, 209, 122, 0.06);
+    --pixel-dim: #2c4a30;
+    --pixel-mid: #4d7a45;
+    --pixel-bright: #a3d17a;
+    --pixel-glow: rgba(163, 209, 122, 0.45);
+
+    --accent: #9c3f28;
+    --accent-highlight: #c1573c;
+    --accent-ink: #f4e9df;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17160f;
+      --ink: #e9e6d4;
+      --ink-soft: #a9a58d;
+      --case: #3d3b2c;
+      --case-highlight: #55523d;
+      --case-shadow: #131209;
+      --case-edge: #0c0b06;
+
+      --accent: #b8503a;
+      --accent-highlight: #d97250;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #17160f;
+    --ink: #e9e6d4;
+    --ink-soft: #a9a58d;
+    --case: #3d3b2c;
+    --case-highlight: #55523d;
+    --case-shadow: #131209;
+    --case-edge: #0c0b06;
+
+    --accent: #b8503a;
+    --accent-highlight: #d97250;
+  }
+
+  :root[data-theme="light"] {
+    --bg: #d9d6c4;
+    --ink: #2b2a1f;
+    --ink-soft: #6b6852;
+    --case: #c7c4a8;
+    --case-highlight: #f1efdc;
+    --case-shadow: #96927a;
+    --case-edge: #7d7a63;
+
+    --accent: #9c3f28;
+    --accent-highlight: #c1573c;
+  }
+
   * { box-sizing: border-box; }
+
   body {
     margin: 0;
     min-height: 100vh;
+    min-height: 100svh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: #1e1e2f;
-    font-family: Arial, Helvetica, sans-serif;
-    color: #fff;
+    gap: 18px;
+    padding: 32px 16px 44px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
   }
-  h1 { margin: 10px 0; }
-  #scoreboard {
-    display: flex;
-    gap: 30px;
-    margin-bottom: 10px;
-    font-size: 18px;
+
+  h1 {
+    margin: 0;
+    font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: clamp(22px, 5vw, 30px);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-wrap: balance;
+    color: var(--ink);
   }
-  #gameCanvas {
-    background: #111122;
-    border: 3px solid #4caf50;
-    border-radius: 6px;
-    touch-action: none;
-  }
-  #message {
-    margin-top: 12px;
-    font-size: 20px;
-    min-height: 28px;
-    color: #ff5555;
-  }
-  #controls {
-    margin-top: 10px;
+
+  .device {
+    width: min(94vw, 420px);
+    padding: 20px 20px 26px;
+    border-radius: 30px 30px 40px 40px;
+    background: var(--case);
+    box-shadow:
+      inset 0 2px 0 var(--case-highlight),
+      inset 0 -6px 10px var(--case-shadow),
+      0 1px 0 var(--case-edge),
+      0 18px 36px rgba(0, 0, 0, 0.28);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 16px;
   }
-  #controls .row { display: flex; gap: 6px; }
-  button {
-    background: #4caf50;
-    color: #fff;
+
+  .grille {
+    display: flex;
+    gap: 5px;
+  }
+  .grille span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--case-shadow);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.3);
+  }
+
+  .screen {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    background: var(--bezel);
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .screen-inner {
+    position: relative;
+    background: var(--screen);
+    border-radius: 4px;
+    padding: 8px 10px 10px;
+    overflow: hidden;
+  }
+
+  .screen-inner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.05) 0px,
+      rgba(0,0,0,0.05) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    mix-blend-mode: multiply;
+    opacity: 0.5;
+  }
+
+  .status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    color: var(--pixel-bright);
+    text-shadow: 0 0 6px var(--pixel-glow);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .status-row .label {
+    color: var(--pixel-mid);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    margin-right: 4px;
+  }
+
+  canvas#gameCanvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+  }
+
+  .overlay-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    color: var(--pixel-bright);
+    text-shadow: 0 0 8px var(--pixel-glow);
+    letter-spacing: 0.08em;
+    font-size: 15px;
+    line-height: 1.6;
+    background: rgba(22, 40, 26, 0.86);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    padding: 12px;
+  }
+  .overlay-text.show { opacity: 1; }
+  .overlay-text small {
+    display: block;
+    font-size: 10px;
+    color: var(--pixel-mid);
+    margin-top: 6px;
+    letter-spacing: 0.06em;
+  }
+
+  .softkeys {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .key {
+    flex: 1;
     border: none;
-    border-radius: 6px;
-    padding: 10px 16px;
+    border-radius: 8px;
+    padding: 10px 8px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -3px 4px rgba(0,0,0,0.25), 0 2px 3px rgba(0,0,0,0.2);
+    cursor: pointer;
+  }
+  .key:active {
+    background: var(--accent-highlight);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.35);
+    transform: translateY(1px);
+  }
+  .key:focus-visible, .dbtn:focus-visible {
+    outline: 2px solid var(--pixel-bright);
+    outline-offset: 2px;
+  }
+
+  .dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 52px);
+    grid-template-rows: repeat(3, 52px);
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .dbtn {
+    border: none;
+    border-radius: 10px;
+    background: var(--case-edge);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -3px 5px rgba(0,0,0,0.35), 0 2px 2px rgba(0,0,0,0.15);
+    color: var(--case-highlight);
     font-size: 18px;
     cursor: pointer;
+    -webkit-user-select: none;
     user-select: none;
+    touch-action: none;
   }
-  button:active { background: #3d8b40; }
-  #restartBtn {
-    margin-top: 10px;
-    background: #2196f3;
+  .dbtn:active {
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+    transform: translateY(1px);
   }
+  .dbtn.up { grid-column: 2; grid-row: 1; }
+  .dbtn.left { grid-column: 1; grid-row: 2; }
+  .dbtn.center {
+    grid-column: 2; grid-row: 2;
+    background: var(--case-shadow);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+    cursor: default;
+  }
+  .dbtn.right { grid-column: 3; grid-row: 2; }
+  .dbtn.down { grid-column: 2; grid-row: 3; }
+
   .hint {
-    font-size: 13px;
-    color: #aaa;
-    margin-top: 8px;
+    max-width: 360px;
     text-align: center;
-    max-width: 420px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+  .hint strong { color: var(--ink); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .key, .dbtn, .overlay-text { transition: none; }
   }
 </style>
 </head>
 <body>
-  <h1>🐍 Jogo da Cobrinha</h1>
-  <div id="scoreboard">
-    <div>Pontuação: <span id="score">0</span></div>
-    <div>Recorde: <span id="highscore">0</span></div>
-  </div>
-  <canvas id="gameCanvas" width="400" height="400"></canvas>
-  <div id="message"></div>
-  <button id="restartBtn">Reiniciar</button>
+  <h1>Jogo da Cobrinha</h1>
 
-  <div id="controls">
-    <div class="row">
-      <button id="btnUp">▲</button>
+  <div class="device">
+    <div class="grille" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
     </div>
-    <div class="row">
-      <button id="btnLeft">◀</button>
-      <button id="btnDown">▼</button>
-      <button id="btnRight">▶</button>
+
+    <div class="screen">
+      <div class="screen-inner">
+        <div class="status-row">
+          <span><span class="label">SCORE</span><span id="score">000</span></span>
+          <span><span class="label">BEST</span><span id="highscore">000</span></span>
+        </div>
+        <canvas id="gameCanvas" width="336" height="196" role="img" aria-label="Área do jogo da cobrinha"></canvas>
+        <div id="overlay" class="overlay-text" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="softkeys">
+      <button id="pauseBtn" class="key" type="button">Pausar</button>
+      <button id="restartBtn" class="key" type="button">Reiniciar</button>
+    </div>
+
+    <div class="dpad" aria-hidden="false">
+      <button class="dbtn up" data-dir="up" type="button" aria-label="Mover para cima">▲</button>
+      <button class="dbtn left" data-dir="left" type="button" aria-label="Mover para a esquerda">◀</button>
+      <div class="dbtn center"></div>
+      <button class="dbtn right" data-dir="right" type="button" aria-label="Mover para a direita">▶</button>
+      <button class="dbtn down" data-dir="down" type="button" aria-label="Mover para baixo">▼</button>
     </div>
   </div>
 
-  <p class="hint">Use as setas do teclado ou os botões acima para jogar. Pressione espaço para pausar.</p>
+  <p class="hint"><strong>Toque no D-pad</strong> para mover. No teclado: setas ou WASD, espaço para pausar.</p>
 
 <script>
 (function () {
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext('2d');
-  const scoreEl = document.getElementById('score');
-  const highscoreEl = document.getElementById('highscore');
-  const messageEl = document.getElementById('message');
-  const restartBtn = document.getElementById('restartBtn');
+  var canvas = document.getElementById('gameCanvas');
+  var ctx = canvas.getContext('2d');
+  var scoreEl = document.getElementById('score');
+  var highscoreEl = document.getElementById('highscore');
+  var overlayEl = document.getElementById('overlay');
+  var pauseBtn = document.getElementById('pauseBtn');
+  var restartBtn = document.getElementById('restartBtn');
 
-  const GRID_SIZE = 20;
-  const TILE_COUNT = canvas.width / GRID_SIZE;
-  const BASE_SPEED_MS = 130;
+  var CELL = 14;
+  var COLS = canvas.width / CELL;
+  var ROWS = canvas.height / CELL;
+  var BASE_INTERVAL = 150;
+  var MIN_INTERVAL = 75;
+  var STEP_DECAY = 3;
 
-  let snake, direction, nextDirection, food, score, highScore, gameOver, paused, loopId;
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  highScore = Number(localStorage.getItem('snakeHighScore') || 0);
-  highscoreEl.textContent = highScore;
+  var snake, direction, nextDirection, food, score, highScore, gameOver, paused, tickTimer, currentInterval;
+
+  highScore = Number(localStorage.getItem('retroSnakeHighScore') || 0);
+  highscoreEl.textContent = pad(highScore);
+
+  function pad(n) {
+    return String(n).padStart(3, '0');
+  }
 
   function resetGame() {
+    var midY = Math.floor(ROWS / 2);
     snake = [
-      { x: 8, y: 10 },
-      { x: 7, y: 10 },
-      { x: 6, y: 10 }
+      { x: 6, y: midY },
+      { x: 5, y: midY },
+      { x: 4, y: midY }
     ];
     direction = { x: 1, y: 0 };
     nextDirection = { x: 1, y: 0 };
     score = 0;
     gameOver = false;
     paused = false;
-    scoreEl.textContent = score;
-    messageEl.textContent = '';
+    scoreEl.textContent = pad(score);
+    hideOverlay();
     placeFood();
-    if (loopId) clearInterval(loopId);
-    loopId = setInterval(tick, BASE_SPEED_MS);
+    setInterval_(BASE_INTERVAL);
+    startRenderLoop();
+  }
+
+  function setInterval_(ms) {
+    currentInterval = ms;
+    if (tickTimer) clearInterval(tickTimer);
+    tickTimer = setInterval(tick, ms);
   }
 
   function placeFood() {
-    let candidate;
+    var candidate;
     do {
       candidate = {
-        x: Math.floor(Math.random() * TILE_COUNT),
-        y: Math.floor(Math.random() * TILE_COUNT)
+        x: Math.floor(Math.random() * COLS),
+        y: Math.floor(Math.random() * ROWS)
       };
-    } while (snake.some(seg => seg.x === candidate.x && seg.y === candidate.y));
+    } while (snake.some(function (seg) { return seg.x === candidate.x && seg.y === candidate.y; }));
     food = candidate;
   }
 
@@ -142,111 +392,141 @@
     if (paused || gameOver) return;
 
     direction = nextDirection;
-    const head = {
-      x: snake[0].x + direction.x,
-      y: snake[0].y + direction.y
-    };
+    var head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
 
-    // Colisão com paredes
-    if (head.x < 0 || head.x >= TILE_COUNT || head.y < 0 || head.y >= TILE_COUNT) {
-      return endGame();
-    }
-
-    // Colisão com o próprio corpo
-    if (snake.some(seg => seg.x === head.x && seg.y === head.y)) {
-      return endGame();
-    }
+    if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) return endGame();
+    if (snake.some(function (seg) { return seg.x === head.x && seg.y === head.y; })) return endGame();
 
     snake.unshift(head);
 
     if (head.x === food.x && head.y === food.y) {
-      score += 10;
-      scoreEl.textContent = score;
+      score += 1;
+      scoreEl.textContent = pad(score);
       placeFood();
+      var next = Math.max(MIN_INTERVAL, BASE_INTERVAL - score * STEP_DECAY);
+      if (next !== currentInterval) setInterval_(next);
     } else {
       snake.pop();
     }
-
-    draw();
   }
 
   function endGame() {
     gameOver = true;
-    clearInterval(loopId);
     if (score > highScore) {
       highScore = score;
-      localStorage.setItem('snakeHighScore', highScore);
-      highscoreEl.textContent = highScore;
+      localStorage.setItem('retroSnakeHighScore', highScore);
+      highscoreEl.textContent = pad(highScore);
     }
-    messageEl.textContent = 'Fim de jogo! Pressione "Reiniciar" para jogar novamente.';
-    draw();
+    showOverlay('FIM DE JOGO', 'Toque em Reiniciar para jogar de novo');
+  }
+
+  function showOverlay(main, sub) {
+    overlayEl.innerHTML = main + (sub ? '<small>' + sub + '</small>' : '');
+    overlayEl.classList.add('show');
+  }
+  function hideOverlay() {
+    overlayEl.classList.remove('show');
+    overlayEl.innerHTML = '';
+  }
+
+  function togglePause() {
+    if (gameOver) return;
+    paused = !paused;
+    if (paused) {
+      showOverlay('PAUSADO', 'Toque em Pausar para continuar');
+    } else {
+      hideOverlay();
+    }
+  }
+
+  var rafId;
+  function startRenderLoop() {
+    if (rafId) cancelAnimationFrame(rafId);
+    var loop = function () {
+      draw();
+      rafId = requestAnimationFrame(loop);
+    };
+    rafId = requestAnimationFrame(loop);
   }
 
   function draw() {
-    ctx.fillStyle = '#111122';
+    var styles = getComputedStyle(document.documentElement);
+    var screenColor = styles.getPropertyValue('--screen').trim();
+    var lineColor = styles.getPropertyValue('--screen-line').trim();
+    var dim = styles.getPropertyValue('--pixel-dim').trim();
+    var mid = styles.getPropertyValue('--pixel-mid').trim();
+    var bright = styles.getPropertyValue('--pixel-bright').trim();
+
+    ctx.fillStyle = screenColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Comida
-    ctx.fillStyle = '#ff5555';
-    ctx.fillRect(food.x * GRID_SIZE + 1, food.y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
-
-    // Cobra
-    snake.forEach((seg, i) => {
-      ctx.fillStyle = i === 0 ? '#8bc34a' : '#4caf50';
-      ctx.fillRect(seg.x * GRID_SIZE + 1, seg.y * GRID_SIZE + 1, GRID_SIZE - 2, GRID_SIZE - 2);
-    });
-
-    if (paused && !gameOver) {
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#fff';
-      ctx.font = '24px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('Pausado', canvas.width / 2, canvas.height / 2);
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1;
+    for (var gx = 0; gx <= COLS; gx++) {
+      ctx.beginPath();
+      ctx.moveTo(gx * CELL + 0.5, 0);
+      ctx.lineTo(gx * CELL + 0.5, canvas.height);
+      ctx.stroke();
     }
+    for (var gy = 0; gy <= ROWS; gy++) {
+      ctx.beginPath();
+      ctx.moveTo(0, gy * CELL + 0.5);
+      ctx.lineTo(canvas.width, gy * CELL + 0.5);
+      ctx.stroke();
+    }
+
+    var blinkOn = reduceMotion ? true : (Math.floor(Date.now() / 300) % 2 === 0);
+    ctx.fillStyle = blinkOn ? bright : mid;
+    ctx.fillRect(food.x * CELL + 2, food.y * CELL + 2, CELL - 4, CELL - 4);
+
+    snake.forEach(function (seg, i) {
+      ctx.fillStyle = i === 0 ? bright : mid;
+      ctx.fillRect(seg.x * CELL + 1, seg.y * CELL + 1, CELL - 2, CELL - 2);
+    });
+    void dim;
   }
 
   function setDirection(x, y) {
-    // Impede que a cobra vire 180 graus sobre si mesma
     if (direction.x === -x && direction.y === -y) return;
-    if (direction.x === x && direction.y === y && (snake.length > 1)) {
-      // permitido, apenas mantém
-    }
-    nextDirection = { x, y };
+    nextDirection = { x: x, y: y };
   }
 
-  document.addEventListener('keydown', (e) => {
+  var DIR_MAP = {
+    up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0]
+  };
+
+  document.querySelectorAll('.dbtn[data-dir]').forEach(function (btn) {
+    var dir = DIR_MAP[btn.getAttribute('data-dir')];
+    btn.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      setDirection(dir[0], dir[1]);
+    });
+  });
+
+  document.addEventListener('keydown', function (e) {
     switch (e.key) {
       case 'ArrowUp': case 'w': case 'W': setDirection(0, -1); e.preventDefault(); break;
       case 'ArrowDown': case 's': case 'S': setDirection(0, 1); e.preventDefault(); break;
       case 'ArrowLeft': case 'a': case 'A': setDirection(-1, 0); e.preventDefault(); break;
       case 'ArrowRight': case 'd': case 'D': setDirection(1, 0); e.preventDefault(); break;
-      case ' ':
-        if (!gameOver) paused = !paused;
-        draw();
-        e.preventDefault();
-        break;
+      case ' ': togglePause(); e.preventDefault(); break;
     }
   });
 
-  document.getElementById('btnUp').addEventListener('click', () => setDirection(0, -1));
-  document.getElementById('btnDown').addEventListener('click', () => setDirection(0, 1));
-  document.getElementById('btnLeft').addEventListener('click', () => setDirection(-1, 0));
-  document.getElementById('btnRight').addEventListener('click', () => setDirection(1, 0));
+  pauseBtn.addEventListener('click', togglePause);
   restartBtn.addEventListener('click', resetGame);
 
-  // Suporte a gestos de deslizar (swipe) em telas de toque
-  let touchStartX = 0, touchStartY = 0;
-  canvas.addEventListener('touchstart', (e) => {
-    const t = e.touches[0];
+  var touchStartX = 0, touchStartY = 0;
+  canvas.addEventListener('touchstart', function (e) {
+    var t = e.touches[0];
     touchStartX = t.clientX;
     touchStartY = t.clientY;
   }, { passive: true });
-
-  canvas.addEventListener('touchend', (e) => {
-    const t = e.changedTouches[0];
-    const dx = t.clientX - touchStartX;
-    const dy = t.clientY - touchStartY;
+  canvas.addEventListener('touchend', function (e) {
+    var t = e.changedTouches[0];
+    var dx = t.clientX - touchStartX;
+    var dy = t.clientY - touchStartY;
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
     if (Math.abs(dx) > Math.abs(dy)) {
       setDirection(dx > 0 ? 1 : -1, 0);
     } else {
@@ -255,7 +535,6 @@
   }, { passive: true });
 
   resetGame();
-  draw();
 })();
 </script>
 </body>
